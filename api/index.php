@@ -1,5 +1,6 @@
 <?php
-require_once 'config/database.php';
+$project_root = dirname(__DIR__);
+require_once $project_root . '/config/database.php';
 $base_path    = '';
 $page_title   = 'Dashboard';
 $current_page = 'dashboard';
@@ -22,7 +23,7 @@ $recent_cases = $db->query("
     LIMIT 6
 ")->fetchAll();
 
-include 'includes/header.php';
+include $project_root . '/includes/header.php';
 ?>
 
 <div class="stats-grid">
@@ -122,7 +123,7 @@ include 'includes/header.php';
 </div>
 
 <?php
-include 'includes/footer.php';
+include $project_root . '/includes/footer.php';
 
 function statusBadge(string $status): string {
     return match($status) {
