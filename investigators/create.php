@@ -1,0 +1,114 @@
+<?php
+require_once '../config/database.php';
+$base_path    = '../';
+$page_title   = 'Add Investigator';
+$current_page = 'investigators';
+
+$db     = getDB();
+$errors = [];
+$old    = [];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $old = $_POST;
+
+    if (empty(trim($_POST['badge_number'] ?? ''))) $errors['badge_number'] = 'Badge number is required.';
+    if (empty(trim($_POST['full_name'] ?? '')))    $errors['full_name']    = 'Full name is required.';
+    if (empty(trim($_POST['rank'] ?? '')))         $errors['rank']         = 'Rank is required.';
+    if (empty(trim($_POST['department'] ?? '')))   $errors['department']   = 'Department is required.';
+
+    if (empty($errors)) {
+        try {
+            $stmt = $db->prepare("
+                INSERT INTO investigators (badge_number, full_name, rank, department, phone, email)
+                VALUES (:badge, :name, :rank, :dept, :phone, :email)
+            ");
+            $stmt->execute([
+                ':badge' => trim($_POST['badge_number']),
+                ':name'  => trim($_POST['full_name']),
+                ':rank'  => trim($_POST['rank']),
+                ':dept'  => trim($_POST['department']),
+                ':phone' => trim($_POST['phone'] ?? '') ?: null,
+                ':email' => trim($_POST['email'] ?? '') ?: null,
+            ]);
+
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . htmlspecialchars(trim($_POST['full_name'])) . '" added to the roster.'];
+            header('Location: index.php');
+            exit;
+
+        } catch (PDOException $e) {
+            if (str_contains($e->getMessage(), 'unique') || str_contains($e->getMessage(), 'duplicate')) {
+                $errors['badge_number'] = 'This badge number is already in use.';
+            } else {
+                $errors['_general'] = 'A database error occurred.';
+                error_log($e->getMessage());
+            }
+        }
+    }
+}
+
+include '../includes/header.php';
+?>
+
+<a href="index.php" class="back-link">&#8592; Back to Investigators</a>
+
+<div class="page-header">
+    <div class="page-title">Add Investigator</div>
+    <div class="page-subtitle">Register a new Gotham City Police Department investigator.</div>
+</div>
+
+<?php if (!empty($errors['_general'])): ?>
+<div class="flash flash-error"><?= htmlspecialchars($errors['_general']) ?></div>
+<?php endif; ?>
+
+<div class="card">
+    <div class="card-header"><div class="card-title">Investigator Information</div></div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>Badge Number <span class="required">*</span></label>
+                    <input type="text" name="badge_number" value="<?= htmlspecialchars($old['badge_number'] ?? '') ?>" placeholder="e.g. GPD-006">
+                    <?php if (!empty($errors['badge_number'])): ?><div class="form-error"><?= htmlspecialchars($errors['badge_number']) ?></div><?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" name="full_name" value="<?= htmlspecialchars($old['full_name'] ?? '') ?>" placeholder="Officer's full name">
+                    <?php if (!empty($errors['full_name'])): ?><div class="form-error"><?= htmlspecialchars($errors['full_name']) ?></div><?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Rank <span class="required">*</span></label>
+                    <input type="text" name="rank" value="<?= htmlspecialchars($old['rank'] ?? '') ?>" placeholder="e.g. Detective, Lieutenant, Captain">
+                    <?php if (!empty($errors['rank'])): ?><div class="form-error"><?= htmlspecialchars($errors['rank']) ?></div><?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Department <span class="required">*</span></label>
+                    <input type="text" name="department" value="<?= htmlspecialchars($old['department'] ?? '') ?>" placeholder="e.g. Major Crimes Unit">
+                    <?php if (!empty($errors['department'])): ?><div class="form-error"><?= htmlspecialchars($errors['department']) ?></div><?php endif; ?>
+                </div>
+
+                <div class="form-group">
+                    <label>Phone</label>
+                    <input type="tel" name="phone" value="<?= htmlspecialchars($old['phone'] ?? '') ?>" placeholder="555-xxxx">
+                </div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="<?= htmlspecialchars($old['email'] ?? '') ?>" placeholder="officer@gpd.gotham.gov">
+                </div>
+
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Register Investigator</button>
+                <a href="index.php" class="btn btn-ghost">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<?php include '../includes/footer.php'; ?>
