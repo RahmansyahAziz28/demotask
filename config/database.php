@@ -1,9 +1,9 @@
 <?php
-$db_host = getenv('DB_HOST') ?: 'localhost';
+$db_host = getenv('DB_HOST') ?: 'aws-0-ap-southeast-1.pooler.supabase.com';
 $db_port = getenv('DB_PORT') ?: '5432';
-$db_name = getenv('DB_NAME') ?: 'gotham_crime_records';
-$db_user = getenv('DB_USER') ?: 'postgres';
-$db_pass = getenv('DB_PASS') ?: '';
+$db_name = getenv('DB_NAME') ?: 'postgres';
+$db_user = getenv('DB_USER') ?: 'postgres.bkfylzfwsdlhfgjohlqi';
+$db_pass = getenv('DB_PASS') ?: 'Sakkarep123!';
 
 function getDB(): PDO {
     global $db_host, $db_port, $db_name, $db_user, $db_pass;
