@@ -118,7 +118,7 @@ include $project_root . '/includes/header.php';
                     <td class="td-mono"><?= htmlspecialchars($c['case_number']) ?></td>
                     <td><?= htmlspecialchars($c['title']) ?></td>
                     <td class="td-muted"><?= htmlspecialchars($c['crime_type']) ?></td>
-                    <td><?= statusBadge($c['status']) ?></td>
+                    <td><?= dashboardStatusBadge($c['status']) ?></td>
                     <td class="td-muted"><?= htmlspecialchars($c['incident_date']) ?></td>
                     <td class="td-muted"><?= htmlspecialchars($c['investigator_name']) ?></td>
                     <td>
@@ -147,7 +147,7 @@ include $project_root . '/includes/header.php';
 <?php
 include $project_root . '/includes/footer.php';
 
-function statusBadge(string $status): string {
+function dashboardStatusBadge(string $status): string {
     return match($status) {
         'Open'                 => '<span class="badge-status badge-open">Open</span>',
         'Under Investigation'  => '<span class="badge-status badge-investigation">Investigating</span>',
