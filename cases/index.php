@@ -17,8 +17,12 @@ $sql    = "SELECT c.case_id, c.case_number, c.title, c.crime_type, c.location,
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (c.case_number ILIKE :s OR c.title ILIKE :s OR c.crime_type ILIKE :s OR c.location ILIKE :s)";
-    $params[':s'] = "%{$search}%";
+    $sql .= " AND (c.case_number ILIKE :case_number OR c.title ILIKE :title OR c.crime_type ILIKE :crime_type OR c.location ILIKE :location)";
+    $search_term = "%{$search}%";
+    $params[':case_number'] = $search_term;
+    $params[':title'] = $search_term;
+    $params[':crime_type'] = $search_term;
+    $params[':location'] = $search_term;
 }
 
 if ($status_filter !== '') {
@@ -31,10 +35,6 @@ $sql .= " ORDER BY c.created_at DESC";
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $cases = $stmt->fetchAll();
-
-$flash = $_SESSION['flash'] ?? null;
-if (isset($_SESSION['flash'])) session_unset();
-session_start() || true;
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 $flash = $_SESSION['flash'] ?? null;

@@ -15,8 +15,12 @@ $sql    = "SELECT i.*,
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (i.full_name ILIKE :s OR i.badge_number ILIKE :s OR i.department ILIKE :s OR i.rank ILIKE :s)";
-    $params[':s'] = "%{$search}%";
+    $sql .= " AND (i.full_name ILIKE :full_name OR i.badge_number ILIKE :badge_number OR i.department ILIKE :department OR i.rank ILIKE :rank)";
+    $search_term = "%{$search}%";
+    $params[':full_name'] = $search_term;
+    $params[':badge_number'] = $search_term;
+    $params[':department'] = $search_term;
+    $params[':rank'] = $search_term;
 }
 
 $sql .= " GROUP BY i.investigator_id ORDER BY i.full_name";

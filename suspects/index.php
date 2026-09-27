@@ -14,8 +14,11 @@ $sql    = "SELECT s.*, c.case_number, c.title AS case_title
 $params = [];
 
 if ($search !== '') {
-    $sql .= " AND (s.full_name ILIKE :s OR s.identification_number ILIKE :s OR c.case_number ILIKE :s)";
-    $params[':s'] = "%{$search}%";
+    $sql .= " AND (s.full_name ILIKE :full_name OR s.identification_number ILIKE :identification_number OR c.case_number ILIKE :case_number)";
+    $search_term = "%{$search}%";
+    $params[':full_name'] = $search_term;
+    $params[':identification_number'] = $search_term;
+    $params[':case_number'] = $search_term;
 }
 
 $sql .= " ORDER BY s.created_at DESC";

@@ -6,7 +6,7 @@
   },
   "routes": [
     {
-      "src": "/(cases|suspects|investigators)/(.+\\.php)$",
+      "src": "/(cases|suspects|investigators|config|includes)/(.+\\.php)$",
       "dest": "/api/index.php?path=/$1/$2"
     },
     {

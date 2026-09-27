@@ -1,6 +1,7 @@
 <?php
-$current_page = basename(dirname($_SERVER['PHP_SELF']));
-if ($current_page === 'gotham-crime-records' || basename($_SERVER['PHP_SELF']) === 'index.php' && $current_page !== 'cases' && $current_page !== 'suspects' && $current_page !== 'investigators') {
+$request_script = $_GET['path'] ?? $_SERVER['PHP_SELF'];
+$current_page = basename(dirname($request_script));
+if ($current_page === 'gotham-crime-records' || basename($request_script) === 'index.php' && $current_page !== 'cases' && $current_page !== 'suspects' && $current_page !== 'investigators') {
     $current_page = 'dashboard';
 }
 $page_title = $page_title ?? 'Gotham Crime Records';
