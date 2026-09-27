@@ -1,5 +1,20 @@
 <?php
 $project_root = dirname(__DIR__);
+$requested_path = $_GET['path'] ?? null;
+
+if ($requested_path !== null) {
+    $page_path = realpath($project_root . '/' . ltrim($requested_path, '/'));
+    $root_prefix = $project_root . DIRECTORY_SEPARATOR;
+
+    if ($page_path === false || !str_starts_with($page_path, $root_prefix) || !is_file($page_path)) {
+        http_response_code(404);
+        exit('Page not found');
+    }
+
+    require $page_path;
+    exit;
+}
+
 require_once $project_root . '/config/database.php';
 $base_path    = '';
 $page_title   = 'Dashboard';

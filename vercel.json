@@ -6,6 +6,10 @@
   },
   "routes": [
     {
+      "src": "/(cases|suspects|investigators)/(.+\\.php)$",
+      "dest": "/api/index.php?path=/$1/$2"
+    },
+    {
       "handle": "filesystem"
     },
     {
