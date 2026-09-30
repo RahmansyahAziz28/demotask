@@ -57,7 +57,7 @@ include __DIR__ . '/includes/header.php';
                 </div>
 
                 <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 12px; font-size: 14px;">
-                    Sign In to Terminal
+                    Sign In
                 </button>
             </form>
         </div>
