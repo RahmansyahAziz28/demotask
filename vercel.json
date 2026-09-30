@@ -6,19 +6,12 @@
   },
   "routes": [
     {
-      "src": "/(cases|suspects|investigators|config|includes)/(.+\\.php)$",
-      "dest": "/api/index.php?path=/$1/$2"
-    },
-    {
-      "src": "/(login|proses_login|register|proses_register|logout|index)\\.php$",
-      "dest": "/api/index.php?path=/$1.php"
-    },
-    {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.php"
+      "dest": "/api/index.php?path=$1"
     }
   ]
 }
