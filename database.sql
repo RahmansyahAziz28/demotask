@@ -9,7 +9,8 @@ CREATE TABLE investigators (
     rank            VARCHAR(50) NOT NULL,
     department      VARCHAR(100) NOT NULL,
     phone           VARCHAR(20),
-    email           VARCHAR(100),
+    email           VARCHAR(100) UNIQUE,
+    password        VARCHAR(255) NOT NULL,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -40,12 +41,13 @@ CREATE TABLE suspects (
     created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-INSERT INTO investigators (badge_number, full_name, rank, department, phone, email) VALUES
-('GPD-001', 'James Gordon',     'Commissioner',    'Major Crimes Unit',     '555-0101', 'gordon@gpd.gotham.gov'),
-('GPD-002', 'Harvey Bullock',   'Detective',       'Major Crimes Unit',     '555-0102', 'bullock@gpd.gotham.gov'),
-('GPD-003', 'Renee Montoya',    'Detective',       'Special Crimes Unit',   '555-0103', 'montoya@gpd.gotham.gov'),
-('GPD-004', 'Crispus Allen',    'Detective',       'Special Crimes Unit',   '555-0104', 'allen@gpd.gotham.gov'),
-('GPD-005', 'Sarah Essen',      'Captain',         'Organized Crime Unit',  '555-0105', 'essen@gpd.gotham.gov');
+
+INSERT INTO investigators (badge_number, full_name, rank, department, phone, email, password) VALUES
+('GPD-001', 'James Gordon',     'Commissioner',    'Major Crimes Unit',     '555-0101', 'gordon@gpd.gotham.gov',  '$2y$10$wK1y30mB84Rj1sHshO9kEu2lIeS5.0U/j2/dZ3gQvL5k01ZJ1pC4e'),
+('GPD-002', 'Harvey Bullock',   'Detective',       'Major Crimes Unit',     '555-0102', 'bullock@gpd.gotham.gov', '$2y$10$wK1y30mB84Rj1sHshO9kEu2lIeS5.0U/j2/dZ3gQvL5k01ZJ1pC4e'),
+('GPD-003', 'Renee Montoya',    'Detective',       'Special Crimes Unit',   '555-0103', 'montoya@gpd.gotham.gov', '$2y$10$wK1y30mB84Rj1sHshO9kEu2lIeS5.0U/j2/dZ3gQvL5k01ZJ1pC4e'),
+('GPD-004', 'Crispus Allen',    'Detective',       'Special Crimes Unit',   '555-0104', 'allen@gpd.gotham.gov',   '$2y$10$wK1y30mB84Rj1sHshO9kEu2lIeS5.0U/j2/dZ3gQvL5k01ZJ1pC4e'),
+('GPD-005', 'Sarah Essen',      'Captain',         'Organized Crime Unit',  '555-0105', 'essen@gpd.gotham.gov',   '$2y$10$wK1y30mB84Rj1sHshO9kEu2lIeS5.0U/j2/dZ3gQvL5k01ZJ1pC4e');
 
 INSERT INTO cases (case_number, title, crime_type, location, incident_date, status, description, investigator_id) VALUES
 ('GTH-2026-001', 'Ace Chemicals Warehouse Break-In',   'Burglary',         'Ace Chemicals, East Gotham',         '2026-01-15', 'Closed',               'Unknown assailant broke into Ace Chemicals storage facility. Several barrels of experimental compounds reported missing.', 1),

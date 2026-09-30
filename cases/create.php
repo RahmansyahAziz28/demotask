@@ -1,8 +1,10 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $page_title   = 'Open New Case';
 $current_page = 'cases';
+
+require_once '../includes/auth.php';
+require_once '../config/database.php';
 
 $db = getDB();
 $investigators = $db->query("SELECT investigator_id, badge_number, full_name, rank FROM investigators ORDER BY full_name")->fetchAll();

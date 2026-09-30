@@ -1,23 +1,33 @@
-        </div>
+        </main>
+        <footer class="app-footer">
+            <div class="footer-inner">
+                <div class="footer-col-left">
+                    <span class="footer-badge">&#9733; GPD ARCHIVES</span>
+                    <span class="footer-meta">Internal Records System &bull; Authorized Personnel Only</span>
+                </div>
+                <div class="footer-col-right">
+                    <span class="footer-secure">&bull; System Online &bull; Encrypted Session</span>
+                </div>
+            </div>
+        </footer>
     </div>
-</div>
 
 <script>
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('show');
+function toggleNavMenu() {
+    const navGroup = document.getElementById('navbarNavGroup');
+    const toggleBtn = document.getElementById('navToggleBtn');
+    if (navGroup) {
+        navGroup.classList.toggle('nav-open');
+    }
+    if (toggleBtn) {
+        toggleBtn.classList.toggle('open');
+    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {
     const flash = document.querySelector('.flash');
     if (flash) {
-        setTimeout(() => {
-            flash.style.opacity = '0';
-            flash.style.transition = 'opacity 0.5s';
-            setTimeout(() => flash.remove(), 500);
-        }, 4000);
+        setTimeout(() => flash.remove(), 4500);
     }
 });
 

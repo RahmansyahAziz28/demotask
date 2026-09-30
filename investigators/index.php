@@ -1,32 +1,19 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $page_title   = 'Investigators';
 $current_page = 'investigators';
 
-$db     = getDB();
-$search = trim($_GET['search'] ?? '');
+require_once '../config/database.php';
 
-$sql    = "SELECT i.*,
-                  COUNT(c.case_id) AS case_count
-           FROM investigators i
-           LEFT JOIN cases c ON i.investigator_id = c.investigator_id
-           WHERE 1=1";
-$params = [];
+$db = getDB();
 
-if ($search !== '') {
-    $sql .= " AND (i.full_name ILIKE :full_name OR i.badge_number ILIKE :badge_number OR i.department ILIKE :department OR i.rank ILIKE :rank)";
-    $search_term = "%{$search}%";
-    $params[':full_name'] = $search_term;
-    $params[':badge_number'] = $search_term;
-    $params[':department'] = $search_term;
-    $params[':rank'] = $search_term;
-}
+$sql = "SELECT i.*,
+               COUNT(c.case_id) AS case_count
+        FROM investigators i
+        LEFT JOIN cases c ON i.investigator_id = c.investigator_id
+        GROUP BY i.investigator_id ORDER BY i.full_name";
 
-$sql .= " GROUP BY i.investigator_id ORDER BY i.full_name";
-$stmt = $db->prepare($sql);
-$stmt->execute($params);
-$investigators = $stmt->fetchAll();
+$investigators = $db->query($sql)->fetchAll();
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 $flash = $_SESSION['flash'] ?? null;
@@ -45,11 +32,7 @@ include '../includes/header.php';
 </div>
 
 <div class="section-header">
-    <form class="search-form" method="GET">
-        <input type="search" name="search" placeholder="Search name, badge, dept..." value="<?= htmlspecialchars($search) ?>">
-        <button type="submit" class="btn btn-ghost btn-sm">Search</button>
-        <?php if ($search): ?><a href="index.php" class="btn btn-ghost btn-sm">Clear</a><?php endif; ?>
-    </form>
+    <div></div>
     <a href="create.php" class="btn btn-primary">&#43; Add Investigator</a>
 </div>
 
@@ -59,8 +42,8 @@ include '../includes/header.php';
         <div class="empty-state">
             <div class="empty-state-icon"></div>
             <div class="empty-state-title">No Investigators Found</div>
-            <div class="empty-state-text"><?= $search ? 'No investigators match your search.' : 'No investigators registered in the system.' ?></div>
-            <?php if (!$search): ?><a href="create.php" class="btn btn-primary">Add First Investigator</a><?php endif; ?>
+            <div class="empty-state-text">No investigators registered in the system.</div>
+            <a href="create.php" class="btn btn-primary">Add First Investigator</a>
         </div>
         <?php else: ?>
         <table>

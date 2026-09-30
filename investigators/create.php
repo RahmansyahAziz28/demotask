@@ -1,8 +1,10 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $page_title   = 'Add Investigator';
 $current_page = 'investigators';
+
+require_once '../includes/auth.php';
+require_once '../config/database.php';
 
 $db     = getDB();
 $errors = [];
@@ -18,21 +20,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         try {
+            $plain_pw = trim($_POST['password'] ?? '');
+            if ($plain_pw === '') {
+                $plain_pw = 'password123';
+            }
+            $hash = password_hash($plain_pw, PASSWORD_DEFAULT);
+
             $stmt = $db->prepare("
-                INSERT INTO investigators (badge_number, full_name, rank, department, phone, email)
-                VALUES (:badge, :name, :rank, :dept, :phone, :email)
+                INSERT INTO investigators (badge_number, full_name, rank, department, phone, email, password)
+                VALUES (:badge, :name, :rank, :dept, :phone, :email, :password)
             ");
             $stmt->execute([
-                ':badge' => trim($_POST['badge_number']),
-                ':name'  => trim($_POST['full_name']),
-                ':rank'  => trim($_POST['rank']),
-                ':dept'  => trim($_POST['department']),
-                ':phone' => trim($_POST['phone'] ?? '') ?: null,
-                ':email' => trim($_POST['email'] ?? '') ?: null,
+                ':badge'    => trim($_POST['badge_number']),
+                ':name'     => trim($_POST['full_name']),
+                ':rank'     => trim($_POST['rank']),
+                ':dept'     => trim($_POST['department']),
+                ':phone'    => trim($_POST['phone'] ?? '') ?: null,
+                ':email'    => trim($_POST['email'] ?? '') ?: null,
+                ':password' => $hash,
             ]);
 
             if (session_status() === PHP_SESSION_NONE) session_start();
-            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . htmlspecialchars(trim($_POST['full_name'])) . '" added to the roster.'];
+            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . htmlspecialchars(trim($_POST['full_name'])) . '" added to the roster. Default password: ' . htmlspecialchars($plain_pw)];
             header('Location: index.php');
             exit;
 
@@ -99,6 +108,12 @@ include '../includes/header.php';
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email" value="<?= htmlspecialchars($old['email'] ?? '') ?>" placeholder="officer@gpd.gotham.gov">
+                </div>
+
+                <div class="form-group">
+                    <label>Account Password</label>
+                    <input type="password" name="password" placeholder="Leave empty for default (password123)">
+                    <span class="form-hint">Default password is <code>password123</code> if left empty.</span>
                 </div>
 
             </div>

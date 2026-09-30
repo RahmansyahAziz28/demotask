@@ -1,7 +1,8 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $current_page = 'suspects';
+
+require_once '../config/database.php';
 
 $db = getDB();
 $id = (int)($_GET['id'] ?? 0);

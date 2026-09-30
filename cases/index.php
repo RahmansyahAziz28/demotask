@@ -1,40 +1,19 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $page_title   = 'Case Files';
 $current_page = 'cases';
 
+require_once '../config/database.php';
+
 $db = getDB();
 
-$search = trim($_GET['search'] ?? '');
-$status_filter = $_GET['status'] ?? '';
+$sql = "SELECT c.case_id, c.case_number, c.title, c.crime_type, c.location,
+               c.incident_date, c.status, i.full_name AS investigator_name
+        FROM cases c
+        JOIN investigators i ON c.investigator_id = i.investigator_id
+        ORDER BY c.created_at DESC";
 
-$sql    = "SELECT c.case_id, c.case_number, c.title, c.crime_type, c.location,
-                  c.incident_date, c.status, i.full_name AS investigator_name
-           FROM cases c
-           JOIN investigators i ON c.investigator_id = i.investigator_id
-           WHERE 1=1";
-$params = [];
-
-if ($search !== '') {
-    $sql .= " AND (c.case_number ILIKE :case_number OR c.title ILIKE :title OR c.crime_type ILIKE :crime_type OR c.location ILIKE :location)";
-    $search_term = "%{$search}%";
-    $params[':case_number'] = $search_term;
-    $params[':title'] = $search_term;
-    $params[':crime_type'] = $search_term;
-    $params[':location'] = $search_term;
-}
-
-if ($status_filter !== '') {
-    $sql .= " AND c.status = :st";
-    $params[':st'] = $status_filter;
-}
-
-$sql .= " ORDER BY c.created_at DESC";
-
-$stmt = $db->prepare($sql);
-$stmt->execute($params);
-$cases = $stmt->fetchAll();
+$cases = $db->query($sql)->fetchAll();
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 $flash = $_SESSION['flash'] ?? null;
@@ -64,19 +43,7 @@ function statusBadge(string $status): string {
 </div>
 
 <div class="section-header">
-    <form class="search-form" method="GET">
-        <input type="search" name="search" placeholder="Search cases..." value="<?= htmlspecialchars($search) ?>">
-        <select name="status" style="width:auto;">
-            <option value="">All Statuses</option>
-            <option value="Open"                <?= $status_filter === 'Open'                ? 'selected' : '' ?>>Open</option>
-            <option value="Under Investigation" <?= $status_filter === 'Under Investigation' ? 'selected' : '' ?>>Under Investigation</option>
-            <option value="Closed"              <?= $status_filter === 'Closed'              ? 'selected' : '' ?>>Closed</option>
-        </select>
-        <button type="submit" class="btn btn-ghost btn-sm">Filter</button>
-        <?php if ($search || $status_filter): ?>
-        <a href="index.php" class="btn btn-ghost btn-sm">Clear</a>
-        <?php endif; ?>
-    </form>
+    <div></div>
     <a href="create.php" class="btn btn-primary">&#43; Open New Case</a>
 </div>
 
@@ -86,12 +53,8 @@ function statusBadge(string $status): string {
         <div class="empty-state">
             <div class="empty-state-icon"></div>
             <div class="empty-state-title">No Cases Found</div>
-            <div class="empty-state-text">
-                <?= $search || $status_filter ? 'No cases match your search criteria.' : 'No criminal cases have been entered yet.' ?>
-            </div>
-            <?php if (!$search && !$status_filter): ?>
+            <div class="empty-state-text">No criminal cases have been entered yet.</div>
             <a href="create.php" class="btn btn-primary">Open First Case</a>
-            <?php endif; ?>
         </div>
         <?php else: ?>
         <table>

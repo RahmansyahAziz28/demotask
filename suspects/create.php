@@ -1,8 +1,10 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $page_title   = 'Add Suspect';
 $current_page = 'suspects';
+
+require_once '../includes/auth.php';
+require_once '../config/database.php';
 
 $db    = getDB();
 $cases = $db->query("SELECT case_id, case_number, title FROM cases ORDER BY case_number")->fetchAll();

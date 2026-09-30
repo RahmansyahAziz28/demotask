@@ -1,30 +1,18 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $page_title   = 'Suspects';
 $current_page = 'suspects';
 
-$db     = getDB();
-$search = trim($_GET['search'] ?? '');
+require_once '../config/database.php';
 
-$sql    = "SELECT s.*, c.case_number, c.title AS case_title
-           FROM suspects s
-           JOIN cases c ON s.case_id = c.case_id
-           WHERE 1=1";
-$params = [];
+$db = getDB();
 
-if ($search !== '') {
-    $sql .= " AND (s.full_name ILIKE :full_name OR s.identification_number ILIKE :identification_number OR c.case_number ILIKE :case_number)";
-    $search_term = "%{$search}%";
-    $params[':full_name'] = $search_term;
-    $params[':identification_number'] = $search_term;
-    $params[':case_number'] = $search_term;
-}
+$sql = "SELECT s.*, c.case_number, c.title AS case_title
+        FROM suspects s
+        JOIN cases c ON s.case_id = c.case_id
+        ORDER BY s.created_at DESC";
 
-$sql .= " ORDER BY s.created_at DESC";
-$stmt = $db->prepare($sql);
-$stmt->execute($params);
-$suspects = $stmt->fetchAll();
+$suspects = $db->query($sql)->fetchAll();
 
 if (session_status() === PHP_SESSION_NONE) session_start();
 $flash = $_SESSION['flash'] ?? null;
@@ -43,11 +31,7 @@ include '../includes/header.php';
 </div>
 
 <div class="section-header">
-    <form class="search-form" method="GET">
-        <input type="search" name="search" placeholder="Search name, ID, case..." value="<?= htmlspecialchars($search) ?>">
-        <button type="submit" class="btn btn-ghost btn-sm">Search</button>
-        <?php if ($search): ?><a href="index.php" class="btn btn-ghost btn-sm">Clear</a><?php endif; ?>
-    </form>
+    <div></div>
     <a href="create.php" class="btn btn-primary">&#43; Add Suspect</a>
 </div>
 
@@ -57,8 +41,8 @@ include '../includes/header.php';
         <div class="empty-state">
             <div class="empty-state-icon"></div>
             <div class="empty-state-title">No Suspects Found</div>
-            <div class="empty-state-text"><?= $search ? 'No suspects match your search.' : 'No suspects registered in the system.' ?></div>
-            <?php if (!$search): ?><a href="create.php" class="btn btn-primary">Add First Suspect</a><?php endif; ?>
+            <div class="empty-state-text">No suspects registered in the system.</div>
+            <a href="create.php" class="btn btn-primary">Add First Suspect</a>
         </div>
         <?php else: ?>
         <table>

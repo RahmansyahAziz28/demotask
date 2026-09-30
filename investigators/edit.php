@@ -1,7 +1,9 @@
 <?php
-require_once '../config/database.php';
 $base_path    = '../';
 $current_page = 'investigators';
+
+require_once '../includes/auth.php';
+require_once '../config/database.php';
 
 $db = getDB();
 $id = (int)($_GET['id'] ?? 0);
@@ -26,22 +28,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         try {
-            $stmt = $db->prepare("
-                UPDATE investigators
-                SET badge_number=:badge, full_name=:name, rank=:rank, department=:dept, phone=:phone, email=:email
-                WHERE investigator_id=:id
-            ");
-            $stmt->execute([
-                ':badge' => trim($_POST['badge_number']),
-                ':name'  => trim($_POST['full_name']),
-                ':rank'  => trim($_POST['rank']),
-                ':dept'  => trim($_POST['department']),
-                ':phone' => trim($_POST['phone'] ?? '') ?: null,
-                ':email' => trim($_POST['email'] ?? '') ?: null,
-                ':id'    => $id,
-            ]);
+            $new_pw = trim($_POST['password'] ?? '');
+            if ($new_pw !== '') {
+                $hash = password_hash($new_pw, PASSWORD_DEFAULT);
+                $stmt = $db->prepare("
+                    UPDATE investigators
+                    SET badge_number=:badge, full_name=:name, rank=:rank, department=:dept, phone=:phone, email=:email, password=:password
+                    WHERE investigator_id=:id
+                ");
+                $params = [
+                    ':badge'    => trim($_POST['badge_number']),
+                    ':name'     => trim($_POST['full_name']),
+                    ':rank'     => trim($_POST['rank']),
+                    ':dept'     => trim($_POST['department']),
+                    ':phone'    => trim($_POST['phone'] ?? '') ?: null,
+                    ':email'    => trim($_POST['email'] ?? '') ?: null,
+                    ':password' => $hash,
+                    ':id'       => $id,
+                ];
+            } else {
+                $stmt = $db->prepare("
+                    UPDATE investigators
+                    SET badge_number=:badge, full_name=:name, rank=:rank, department=:dept, phone=:phone, email=:email
+                    WHERE investigator_id=:id
+                ");
+                $params = [
+                    ':badge' => trim($_POST['badge_number']),
+                    ':name'  => trim($_POST['full_name']),
+                    ':rank'  => trim($_POST['rank']),
+                    ':dept'  => trim($_POST['department']),
+                    ':phone' => trim($_POST['phone'] ?? '') ?: null,
+                    ':email' => trim($_POST['email'] ?? '') ?: null,
+                    ':id'    => $id,
+                ];
+            }
+            $stmt->execute($params);
 
             if (session_status() === PHP_SESSION_NONE) session_start();
+            if (isset($_SESSION['user_id']) && (int)$_SESSION['user_id'] === $id) {
+                $_SESSION['user_name']    = trim($_POST['full_name']);
+                $_SESSION['badge_number'] = trim($_POST['badge_number']);
+                $_SESSION['rank']         = trim($_POST['rank']);
+                $_SESSION['department']   = trim($_POST['department']);
+            }
             $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator record updated successfully.'];
             header('Location: show.php?id=' . $id);
             exit;
@@ -109,6 +138,12 @@ include '../includes/header.php';
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" name="email" value="<?= htmlspecialchars($old['email'] ?? '') ?>">
+                </div>
+
+                <div class="form-group">
+                    <label>Change Security Password</label>
+                    <input type="password" name="password" placeholder="Leave empty to keep existing password">
+                    <span class="form-hint">Only enter a value if you wish to reset or change this officer's password.</span>
                 </div>
 
             </div>
