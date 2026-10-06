@@ -4,11 +4,15 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/csrf.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: register.php');
     exit;
 }
+
+csrf_verify();
 
 $badge_number     = trim($_POST['badge_number'] ?? '');
 $full_name        = trim($_POST['full_name'] ?? '');
@@ -58,13 +62,13 @@ try {
     $checkBadge = $db->prepare("SELECT COUNT(*) FROM investigators WHERE UPPER(badge_number) = UPPER(:badge)");
     $checkBadge->execute([':badge' => $badge_number]);
     if ($checkBadge->fetchColumn() > 0) {
-        $errors['badge_number'] = 'Badge number "' . htmlspecialchars($badge_number) . '" is already registered.';
+        $errors['badge_number'] = 'Badge number "' . e($badge_number) . '" is already registered.';
     }
 
     $checkEmail = $db->prepare("SELECT COUNT(*) FROM investigators WHERE LOWER(email) = LOWER(:email)");
     $checkEmail->execute([':email' => $email]);
     if ($checkEmail->fetchColumn() > 0) {
-        $errors['email'] = 'Email "' . htmlspecialchars($email) . '" is already registered to another officer.';
+        $errors['email'] = 'Email "' . e($email) . '" is already registered to another officer.';
     }
 
     if (!empty($errors)) {

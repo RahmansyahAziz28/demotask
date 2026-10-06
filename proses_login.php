@@ -4,11 +4,15 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/csrf.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: login.php');
     exit;
 }
+
+csrf_verify();
 
 $identity = trim($_POST['identity'] ?? '');
 $password = $_POST['password'] ?? '';
@@ -48,7 +52,7 @@ try {
 
         $_SESSION['flash'] = [
             'type' => 'success',
-            'msg'  => 'Access granted. Welcome back, ' . htmlspecialchars($user['rank']) . ' ' . htmlspecialchars($user['full_name']) . '.'
+            'msg'  => 'Access granted. Welcome back, ' . e($user['rank']) . ' ' . e($user['full_name']) . '.'
         ];
 
         header('Location: index.php');

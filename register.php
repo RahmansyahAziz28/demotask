@@ -29,18 +29,19 @@ include __DIR__ . '/includes/header.php';
 
         <div class="auth-body">
             <?php if ($flash): ?>
-                <div class="flash flash-<?= htmlspecialchars($flash['type']) ?>">
-                    <span><?= htmlspecialchars($flash['msg']) ?></span>
+                <div class="flash flash-<?= e($flash['type']) ?>">
+                    <span><?= e($flash['msg']) ?></span>
                 </div>
             <?php endif; ?>
 
             <?php if (!empty($errors['_general'])): ?>
                 <div class="flash flash-error">
-                    <span><?= htmlspecialchars($errors['_general']) ?></span>
+                    <span><?= e($errors['_general']) ?></span>
                 </div>
             <?php endif; ?>
 
             <form action="proses_register.php" method="POST" autocomplete="off">
+                <?= csrf_field() ?>
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="badge_number">Badge Number <span class="required">*</span></label>
@@ -48,12 +49,12 @@ include __DIR__ . '/includes/header.php';
                             type="text" 
                             id="badge_number" 
                             name="badge_number" 
-                            value="<?= htmlspecialchars($old['badge_number'] ?? '') ?>" 
+                            value="<?= e($old['badge_number'] ?? '') ?>" 
                             placeholder="e.g. GPD-006" 
                             required
                         >
                         <?php if (!empty($errors['badge_number'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['badge_number']) ?></div>
+                            <div class="form-error"><?= e($errors['badge_number']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -63,12 +64,12 @@ include __DIR__ . '/includes/header.php';
                             type="text" 
                             id="full_name" 
                             name="full_name" 
-                            value="<?= htmlspecialchars($old['full_name'] ?? '') ?>" 
+                            value="<?= e($old['full_name'] ?? '') ?>" 
                             placeholder="e.g. Richard Grayson" 
                             required
                         >
                         <?php if (!empty($errors['full_name'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['full_name']) ?></div>
+                            <div class="form-error"><?= e($errors['full_name']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -81,11 +82,11 @@ include __DIR__ . '/includes/header.php';
                             $selected_rank = $old['rank'] ?? 'Detective';
                             foreach ($ranks as $r):
                             ?>
-                                <option value="<?= $r ?>" <?= $selected_rank === $r ? 'selected' : '' ?>><?= $r ?></option>
+                                <option value="<?= e($r) ?>" <?= $selected_rank === $r ? 'selected' : '' ?>><?= e($r) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <?php if (!empty($errors['rank'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['rank']) ?></div>
+                            <div class="form-error"><?= e($errors['rank']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -106,11 +107,11 @@ include __DIR__ . '/includes/header.php';
                             $selected_dept = $old['department'] ?? 'Major Crimes Unit';
                             foreach ($depts as $d):
                             ?>
-                                <option value="<?= $d ?>" <?= $selected_dept === $d ? 'selected' : '' ?>><?= $d ?></option>
+                                <option value="<?= e($d) ?>" <?= $selected_dept === $d ? 'selected' : '' ?>><?= e($d) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <?php if (!empty($errors['department'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['department']) ?></div>
+                            <div class="form-error"><?= e($errors['department']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -120,12 +121,12 @@ include __DIR__ . '/includes/header.php';
                             type="email" 
                             id="email" 
                             name="email" 
-                            value="<?= htmlspecialchars($old['email'] ?? '') ?>" 
+                            value="<?= e($old['email'] ?? '') ?>" 
                             placeholder="officer@gpd.gotham.gov" 
                             required
                         >
                         <?php if (!empty($errors['email'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['email']) ?></div>
+                            <div class="form-error"><?= e($errors['email']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -135,11 +136,11 @@ include __DIR__ . '/includes/header.php';
                             type="tel" 
                             id="phone" 
                             name="phone" 
-                            value="<?= htmlspecialchars($old['phone'] ?? '') ?>" 
+                            value="<?= e($old['phone'] ?? '') ?>" 
                             placeholder="555-0199"
                         >
                         <?php if (!empty($errors['phone'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['phone']) ?></div>
+                            <div class="form-error"><?= e($errors['phone']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -153,7 +154,7 @@ include __DIR__ . '/includes/header.php';
                             required
                         >
                         <?php if (!empty($errors['password'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['password']) ?></div>
+                            <div class="form-error"><?= e($errors['password']) ?></div>
                         <?php endif; ?>
                     </div>
 
@@ -167,7 +168,7 @@ include __DIR__ . '/includes/header.php';
                             required
                         >
                         <?php if (!empty($errors['confirm_password'])): ?>
-                            <div class="form-error"><?= htmlspecialchars($errors['confirm_password']) ?></div>
+                            <div class="form-error"><?= e($errors['confirm_password']) ?></div>
                         <?php endif; ?>
                     </div>
                 </div>

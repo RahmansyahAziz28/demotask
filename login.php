@@ -26,19 +26,20 @@ include __DIR__ . '/includes/header.php';
 
         <div class="auth-body">
             <?php if ($flash): ?>
-                <div class="flash flash-<?= htmlspecialchars($flash['type']) ?>">
-                    <span><?= htmlspecialchars($flash['msg']) ?></span>
+                <div class="flash flash-<?= e($flash['type']) ?>">
+                    <span><?= e($flash['msg']) ?></span>
                 </div>
             <?php endif; ?>
 
             <form action="proses_login.php" method="POST" autocomplete="on">
+                <?= csrf_field() ?>
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label for="identity">Badge Number or Email <span class="required">*</span></label>
                     <input 
                         type="text" 
                         id="identity" 
                         name="identity" 
-                        value="<?= htmlspecialchars($old_identity) ?>" 
+                        value="<?= e($old_identity) ?>" 
                         placeholder="e.g. GPD-001 or gordon@gpd.gotham.gov" 
                         required 
                         autofocus
