@@ -4,6 +4,8 @@ $current_page = 'investigators';
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
+require_once '../includes/csrf.php';
 
 $db = getDB();
 $id = (int)($_GET['id'] ?? 0);
@@ -19,6 +21,7 @@ $errors     = [];
 $old        = $inv;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
     $old = $_POST;
 
     if (empty(trim($_POST['badge_number'] ?? ''))) $errors['badge_number'] = 'Badge number is required.';
@@ -89,55 +92,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 include '../includes/header.php';
 ?>
 
-<a href="show.php?id=<?= $id ?>" class="back-link">&#8592; Back to Investigator</a>
+<a href="show.php?id=<?= e($id) ?>" class="back-link">&#8592; Back to Investigator</a>
 
 <div class="page-header">
     <div class="page-title">Edit Investigator</div>
-    <div class="page-subtitle"><?= htmlspecialchars($inv['full_name']) ?> — <?= htmlspecialchars($inv['badge_number']) ?></div>
+    <div class="page-subtitle"><?= e($inv['full_name']) ?> &mdash; <?= e($inv['badge_number']) ?></div>
 </div>
 
 <?php if (!empty($errors['_general'])): ?>
-<div class="flash flash-error"><?= htmlspecialchars($errors['_general']) ?></div>
+<div class="flash flash-error"><?= e($errors['_general']) ?></div>
 <?php endif; ?>
 
 <div class="card">
     <div class="card-header"><div class="card-title">Edit Investigator Information</div></div>
     <div class="card-body">
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="form-grid">
 
                 <div class="form-group">
                     <label>Badge Number <span class="required">*</span></label>
-                    <input type="text" name="badge_number" value="<?= htmlspecialchars($old['badge_number'] ?? '') ?>">
-                    <?php if (!empty($errors['badge_number'])): ?><div class="form-error"><?= htmlspecialchars($errors['badge_number']) ?></div><?php endif; ?>
+                    <input type="text" name="badge_number" value="<?= e($old['badge_number'] ?? '') ?>">
+                    <?php if (!empty($errors['badge_number'])): ?><div class="form-error"><?= e($errors['badge_number']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Full Name <span class="required">*</span></label>
-                    <input type="text" name="full_name" value="<?= htmlspecialchars($old['full_name'] ?? '') ?>">
-                    <?php if (!empty($errors['full_name'])): ?><div class="form-error"><?= htmlspecialchars($errors['full_name']) ?></div><?php endif; ?>
+                    <input type="text" name="full_name" value="<?= e($old['full_name'] ?? '') ?>">
+                    <?php if (!empty($errors['full_name'])): ?><div class="form-error"><?= e($errors['full_name']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Rank <span class="required">*</span></label>
-                    <input type="text" name="rank" value="<?= htmlspecialchars($old['rank'] ?? '') ?>">
-                    <?php if (!empty($errors['rank'])): ?><div class="form-error"><?= htmlspecialchars($errors['rank']) ?></div><?php endif; ?>
+                    <input type="text" name="rank" value="<?= e($old['rank'] ?? '') ?>">
+                    <?php if (!empty($errors['rank'])): ?><div class="form-error"><?= e($errors['rank']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Department <span class="required">*</span></label>
-                    <input type="text" name="department" value="<?= htmlspecialchars($old['department'] ?? '') ?>">
-                    <?php if (!empty($errors['department'])): ?><div class="form-error"><?= htmlspecialchars($errors['department']) ?></div><?php endif; ?>
+                    <input type="text" name="department" value="<?= e($old['department'] ?? '') ?>">
+                    <?php if (!empty($errors['department'])): ?><div class="form-error"><?= e($errors['department']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Phone</label>
-                    <input type="tel" name="phone" value="<?= htmlspecialchars($old['phone'] ?? '') ?>">
+                    <input type="tel" name="phone" value="<?= e($old['phone'] ?? '') ?>">
                 </div>
 
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" value="<?= htmlspecialchars($old['email'] ?? '') ?>">
+                    <input type="email" name="email" value="<?= e($old['email'] ?? '') ?>">
                 </div>
 
                 <div class="form-group">
@@ -150,7 +154,7 @@ include '../includes/header.php';
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">Save Changes</button>
-                <a href="show.php?id=<?= $id ?>" class="btn btn-ghost">Cancel</a>
+                <a href="show.php?id=<?= e($id) ?>" class="btn btn-ghost">Cancel</a>
             </div>
         </form>
     </div>

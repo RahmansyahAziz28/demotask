@@ -4,6 +4,8 @@ $current_page = 'investigators';
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
+require_once '../includes/csrf.php';
 
 $db = getDB();
 $id = (int)($_GET['id'] ?? 0);
@@ -23,20 +25,40 @@ $case_count = (int)$case_count->fetchColumn();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
+    csrf_verify();
     try {
+        $db->beginTransaction();
+
+        $lockStmt = $db->prepare("SELECT investigator_id FROM investigators WHERE investigator_id = :id FOR UPDATE");
+        $lockStmt->execute([':id' => $id]);
+        if (!$lockStmt->fetch()) {
+            throw new Exception('Investigator record not found.');
+        }
+
+        $checkCases = $db->prepare("SELECT COUNT(*) FROM cases WHERE investigator_id = :id FOR UPDATE");
+        $checkCases->execute([':id' => $id]);
+        if ((int)$checkCases->fetchColumn() > 0) {
+            throw new Exception('This investigator cannot be deleted because they are assigned to one or more case files. Reassign those cases first.');
+        }
+
         $del = $db->prepare("DELETE FROM investigators WHERE investigator_id = :id");
         $del->execute([':id' => $id]);
 
+        $db->commit();
+
         if (session_status() === PHP_SESSION_NONE) session_start();
-        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . htmlspecialchars($inv['full_name']) . '" has been removed from the roster.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . e($inv['full_name']) . '" has been removed from the roster.'];
         header('Location: index.php');
         exit;
 
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
         if (str_contains($e->getMessage(), 'foreign key') || str_contains($e->getMessage(), 'violates')) {
             $error = 'This investigator cannot be deleted because they are assigned to one or more active case files. Reassign or close those cases first.';
         } else {
-            $error = 'A database error occurred. Please try again.';
+            $error = $e->getMessage() ?: 'A database error occurred. Please try again.';
             error_log($e->getMessage());
         }
     }
@@ -45,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
 include '../includes/header.php';
 ?>
 
-<a href="show.php?id=<?= $id ?>" class="back-link">&#8592; Back to Investigator</a>
+<a href="show.php?id=<?= e($id) ?>" class="back-link">&#8592; Back to Investigator</a>
 
 <div class="page-header">
     <div class="page-title" style="color:var(--danger);">Delete Investigator</div>
@@ -53,7 +75,7 @@ include '../includes/header.php';
 </div>
 
 <?php if ($error): ?>
-<div class="flash flash-error"><?= htmlspecialchars($error) ?></div>
+<div class="flash flash-error"><?= e($error) ?></div>
 <?php endif; ?>
 
 <div class="card" style="margin-bottom:20px;">
@@ -61,20 +83,20 @@ include '../includes/header.php';
     <div class="detail-grid">
         <div class="detail-item">
             <div class="detail-label">Badge Number</div>
-            <div class="detail-value mono"><?= htmlspecialchars($inv['badge_number']) ?></div>
+            <div class="detail-value mono"><?= e($inv['badge_number']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Full Name</div>
-            <div class="detail-value"><?= htmlspecialchars($inv['full_name']) ?></div>
+            <div class="detail-value"><?= e($inv['full_name']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Rank</div>
-            <div class="detail-value"><?= htmlspecialchars($inv['rank']) ?></div>
+            <div class="detail-value"><?= e($inv['rank']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Active Cases</div>
             <div class="detail-value" style="color:<?= $case_count > 0 ? 'var(--danger)' : 'var(--success)' ?>">
-                <?= $case_count ?> case(s) <?= $case_count > 0 ? '— must be reassigned first' : '' ?>
+                <?= e($case_count) ?> case(s) <?= $case_count > 0 ? '— must be reassigned first' : '' ?>
             </div>
         </div>
     </div>
@@ -82,23 +104,24 @@ include '../includes/header.php';
 
 <?php if ($case_count > 0): ?>
 <div class="flash flash-error">
-    <strong>Cannot delete:</strong> This investigator is still assigned to <?= $case_count ?> case(s).
-    <a href="show.php?id=<?= $id ?>">View their cases</a> and reassign them before deleting this record.
+    <strong>Cannot delete:</strong> This investigator is still assigned to <?= e($case_count) ?> case(s).
+    <a href="show.php?id=<?= e($id) ?>">View their cases</a> and reassign them before deleting this record.
 </div>
 <?php else: ?>
 <div class="danger-zone">
     <h3>Confirm Permanent Deletion</h3>
     <p>
-        You are about to permanently remove <strong><?= htmlspecialchars($inv['full_name']) ?></strong>
-        (<?= htmlspecialchars($inv['badge_number']) ?>) from the Gotham City Police Department records.
+        You are about to permanently remove <strong><?= e($inv['full_name']) ?></strong>
+        (<?= e($inv['badge_number']) ?>) from the Gotham City Police Department records.
         This action cannot be undone.
     </p>
     <form method="POST" style="display:inline;">
+        <?= csrf_field() ?>
         <button type="submit" name="confirm_delete" value="1" class="btn btn-danger"
                 onclick="return confirm('Permanently remove this investigator from the system?')">
             Yes, Delete Investigator
         </button>
-        <a href="show.php?id=<?= $id ?>" class="btn btn-ghost" style="margin-left:8px;">Cancel</a>
+        <a href="show.php?id=<?= e($id) ?>" class="btn btn-ghost" style="margin-left:8px;">Cancel</a>
     </form>
 </div>
 <?php endif; ?>

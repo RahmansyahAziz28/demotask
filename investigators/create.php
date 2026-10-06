@@ -5,12 +5,15 @@ $current_page = 'investigators';
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
+require_once '../includes/csrf.php';
 
 $db     = getDB();
 $errors = [];
 $old    = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
     $old = $_POST;
 
     if (empty(trim($_POST['badge_number'] ?? ''))) $errors['badge_number'] = 'Badge number is required.';
@@ -41,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
 
             if (session_status() === PHP_SESSION_NONE) session_start();
-            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . htmlspecialchars(trim($_POST['full_name'])) . '" added to the roster. Default password: ' . htmlspecialchars($plain_pw)];
+            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Investigator "' . e(trim($_POST['full_name'])) . '" added to the roster. Default password: ' . e($plain_pw)];
             header('Location: index.php');
             exit;
 
@@ -67,47 +70,48 @@ include '../includes/header.php';
 </div>
 
 <?php if (!empty($errors['_general'])): ?>
-<div class="flash flash-error"><?= htmlspecialchars($errors['_general']) ?></div>
+<div class="flash flash-error"><?= e($errors['_general']) ?></div>
 <?php endif; ?>
 
 <div class="card">
     <div class="card-header"><div class="card-title">Investigator Information</div></div>
     <div class="card-body">
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="form-grid">
 
                 <div class="form-group">
                     <label>Badge Number <span class="required">*</span></label>
-                    <input type="text" name="badge_number" value="<?= htmlspecialchars($old['badge_number'] ?? '') ?>" placeholder="e.g. GPD-006">
-                    <?php if (!empty($errors['badge_number'])): ?><div class="form-error"><?= htmlspecialchars($errors['badge_number']) ?></div><?php endif; ?>
+                    <input type="text" name="badge_number" value="<?= e($old['badge_number'] ?? '') ?>" placeholder="e.g. GPD-006">
+                    <?php if (!empty($errors['badge_number'])): ?><div class="form-error"><?= e($errors['badge_number']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Full Name <span class="required">*</span></label>
-                    <input type="text" name="full_name" value="<?= htmlspecialchars($old['full_name'] ?? '') ?>" placeholder="Officer's full name">
-                    <?php if (!empty($errors['full_name'])): ?><div class="form-error"><?= htmlspecialchars($errors['full_name']) ?></div><?php endif; ?>
+                    <input type="text" name="full_name" value="<?= e($old['full_name'] ?? '') ?>" placeholder="Officer's full name">
+                    <?php if (!empty($errors['full_name'])): ?><div class="form-error"><?= e($errors['full_name']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Rank <span class="required">*</span></label>
-                    <input type="text" name="rank" value="<?= htmlspecialchars($old['rank'] ?? '') ?>" placeholder="e.g. Detective, Lieutenant, Captain">
-                    <?php if (!empty($errors['rank'])): ?><div class="form-error"><?= htmlspecialchars($errors['rank']) ?></div><?php endif; ?>
+                    <input type="text" name="rank" value="<?= e($old['rank'] ?? '') ?>" placeholder="e.g. Detective, Lieutenant, Captain">
+                    <?php if (!empty($errors['rank'])): ?><div class="form-error"><?= e($errors['rank']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Department <span class="required">*</span></label>
-                    <input type="text" name="department" value="<?= htmlspecialchars($old['department'] ?? '') ?>" placeholder="e.g. Major Crimes Unit">
-                    <?php if (!empty($errors['department'])): ?><div class="form-error"><?= htmlspecialchars($errors['department']) ?></div><?php endif; ?>
+                    <input type="text" name="department" value="<?= e($old['department'] ?? '') ?>" placeholder="e.g. Major Crimes Unit">
+                    <?php if (!empty($errors['department'])): ?><div class="form-error"><?= e($errors['department']) ?></div><?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label>Phone</label>
-                    <input type="tel" name="phone" value="<?= htmlspecialchars($old['phone'] ?? '') ?>" placeholder="555-xxxx">
+                    <input type="tel" name="phone" value="<?= e($old['phone'] ?? '') ?>" placeholder="555-xxxx">
                 </div>
 
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" value="<?= htmlspecialchars($old['email'] ?? '') ?>" placeholder="officer@gpd.gotham.gov">
+                    <input type="email" name="email" value="<?= e($old['email'] ?? '') ?>" placeholder="officer@gpd.gotham.gov">
                 </div>
 
                 <div class="form-group">
