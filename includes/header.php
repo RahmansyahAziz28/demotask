@@ -3,6 +3,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/csrf.php';
+
 $request_script = $_GET['path'] ?? $_SERVER['PHP_SELF'];
 $current_page = basename(dirname($request_script));
 if ($current_page === 'gotham-crime-records' || basename($request_script) === 'index.php' && $current_page !== 'cases' && $current_page !== 'suspects' && $current_page !== 'investigators') {
@@ -16,7 +19,7 @@ $base = $base_path ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($page_title) ?> &mdash; Gotham Crime Records</title>
+    <title><?= e($page_title) ?> &mdash; Gotham Crime Records</title>
     <link rel="stylesheet" href="<?= $base ?>assets/css/style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

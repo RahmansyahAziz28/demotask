@@ -6,6 +6,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/csrf.php';
+
 $is_logged_in = isset($_SESSION['user_id']);
 $user_name    = $_SESSION['user_name'] ?? 'Investigator';
 $badge_number = $_SESSION['badge_number'] ?? '';
@@ -13,6 +16,14 @@ $rank         = $_SESSION['rank'] ?? '';
 ?>
 <header class="gpd-top-navbar" id="mainNavbar">
     <div class="navbar-container">
+        <a href="<?= $base ?>index.php" class="navbar-brand">
+            <div class="brand-badge">&#9878;</div>
+            <div class="brand-text">
+                <span class="brand-title">GOTHAM P.D.</span>
+                <span class="brand-sub">Crime Records Terminal</span>
+            </div>
+        </a>
+
         <button class="navbar-toggle-btn" id="navToggleBtn" onclick="toggleNavMenu()" aria-label="Toggle navigation">
             <span></span>
             <span></span>
@@ -47,7 +58,10 @@ $rank         = $_SESSION['rank'] ?? '';
                 <?php if ($is_logged_in): ?>
                     <div class="user-profile-badge">
                         <div class="user-details">
-                            <span class="user-name"><?= htmlspecialchars($user_name) ?></span>
+                            <span class="user-name"><?= e($user_name) ?></span>
+                            <?php if ($rank || $badge_number): ?>
+                                <span class="user-rank"><?= e($rank) ?><?= ($rank && $badge_number) ? ' &bull; ' : '' ?><?= e($badge_number) ?></span>
+                            <?php endif; ?>
                         </div>
                     </div>
                     <a href="<?= $base ?>logout.php" class="btn btn-logout" id="logoutBtn" title="Sign out from GPD Terminal">
