@@ -3,6 +3,8 @@ $base_path    = '../';
 $current_page = 'cases';
 
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
+require_once '../includes/csrf.php';
 
 $db = getDB();
 $id = (int)($_GET['id'] ?? 0);
@@ -20,11 +22,21 @@ $case = $stmt->fetch();
 
 if (!$case) { header('Location: index.php'); exit; }
 
-$page_title = htmlspecialchars($case['case_number']);
+$page_title = $case['case_number'];
 
-$suspects = $db->prepare("SELECT * FROM suspects WHERE case_id = :id ORDER BY full_name");
-$suspects->execute([':id' => $id]);
-$suspects = $suspects->fetchAll();
+$suspects_stmt = $db->prepare("
+    SELECT s.*, c.case_number, c.title AS case_title
+    FROM suspects s
+    JOIN cases c ON s.case_id = c.case_id
+    WHERE s.case_id = :id
+    ORDER BY s.full_name ASC
+");
+$suspects_stmt->execute([':id' => $id]);
+$suspects = $suspects_stmt->fetchAll();
+
+if (session_status() === PHP_SESSION_NONE) session_start();
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 
 include '../includes/header.php';
 
@@ -33,24 +45,30 @@ function statusBadge(string $status): string {
         'Open'                => '<span class="badge-status badge-open">Open</span>',
         'Under Investigation' => '<span class="badge-status badge-investigation">Under Investigation</span>',
         'Closed'              => '<span class="badge-status badge-closed">Closed</span>',
-        default               => '<span class="badge-status badge-default">' . htmlspecialchars($status) . '</span>',
+        default               => '<span class="badge-status badge-default">' . e($status) . '</span>',
     };
 }
 ?>
 
 <a href="index.php" class="back-link">&#8592; Back to Case Files</a>
 
+<?php if ($flash): ?>
+<div class="flash flash-<?= e($flash['type']) ?>">
+    <?= e($flash['msg']) ?>
+</div>
+<?php endif; ?>
+
 <div class="page-header" style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;">
     <div>
-        <div class="page-title"><?= htmlspecialchars($case['title']) ?></div>
+        <div class="page-title"><?= e($case['title']) ?></div>
         <div class="page-subtitle" style="display:flex;align-items:center;gap:10px;margin-top:6px;">
-            <span class="td-mono" style="font-size:13px;"><?= htmlspecialchars($case['case_number']) ?></span>
+            <span class="td-mono" style="font-size:13px;"><?= e($case['case_number']) ?></span>
             <?= statusBadge($case['status']) ?>
         </div>
     </div>
     <div class="action-group">
-        <a href="edit.php?id=<?= $case['case_id'] ?>" class="btn btn-secondary">Edit Case</a>
-        <a href="delete.php?id=<?= $case['case_id'] ?>" class="btn btn-danger">Delete</a>
+        <a href="edit.php?id=<?= e($case['case_id']) ?>" class="btn btn-secondary">Edit Case</a>
+        <a href="delete.php?id=<?= e($case['case_id']) ?>" class="btn btn-danger">Delete</a>
     </div>
 </div>
 
@@ -61,19 +79,19 @@ function statusBadge(string $status): string {
     <div class="detail-grid">
         <div class="detail-item">
             <div class="detail-label">Case Number</div>
-            <div class="detail-value mono"><?= htmlspecialchars($case['case_number']) ?></div>
+            <div class="detail-value mono"><?= e($case['case_number']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Crime Type</div>
-            <div class="detail-value"><?= htmlspecialchars($case['crime_type']) ?></div>
+            <div class="detail-value"><?= e($case['crime_type']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Location</div>
-            <div class="detail-value"><?= htmlspecialchars($case['location']) ?></div>
+            <div class="detail-value"><?= e($case['location']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Incident Date</div>
-            <div class="detail-value"><?= htmlspecialchars($case['incident_date']) ?></div>
+            <div class="detail-value"><?= e($case['incident_date']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Status</div>
@@ -81,13 +99,13 @@ function statusBadge(string $status): string {
         </div>
         <div class="detail-item">
             <div class="detail-label">Date Opened</div>
-            <div class="detail-value"><?= htmlspecialchars(substr($case['created_at'], 0, 16)) ?></div>
+            <div class="detail-value"><?= e(substr($case['created_at'], 0, 16)) ?></div>
         </div>
     </div>
     <?php if (!empty($case['description'])): ?>
     <div class="detail-description">
         <div class="detail-label" style="margin-bottom:8px;">Case Notes</div>
-        <?= htmlspecialchars($case['description']) ?>
+        <?= nl2br(e($case['description'])) ?>
     </div>
     <?php endif; ?>
 </div>
@@ -95,32 +113,32 @@ function statusBadge(string $status): string {
 <div class="card" style="margin-bottom:16px;">
     <div class="card-header">
         <div class="card-title">Lead Investigator</div>
-        <a href="../investigators/show.php?id=<?= $case['investigator_id'] ?>" class="btn btn-ghost btn-sm">View Profile</a>
+        <a href="../investigators/show.php?id=<?= e($case['investigator_id']) ?>" class="btn btn-ghost btn-sm">View Profile</a>
     </div>
     <div class="detail-grid">
         <div class="detail-item">
             <div class="detail-label">Full Name</div>
-            <div class="detail-value"><?= htmlspecialchars($case['inv_name']) ?></div>
+            <div class="detail-value"><?= e($case['inv_name']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Badge Number</div>
-            <div class="detail-value mono"><?= htmlspecialchars($case['badge_number']) ?></div>
+            <div class="detail-value mono"><?= e($case['badge_number']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Rank</div>
-            <div class="detail-value"><?= htmlspecialchars($case['rank']) ?></div>
+            <div class="detail-value"><?= e($case['rank']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Department</div>
-            <div class="detail-value"><?= htmlspecialchars($case['department']) ?></div>
+            <div class="detail-value"><?= e($case['department']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Phone</div>
-            <div class="detail-value"><?= htmlspecialchars($case['phone'] ?: '—') ?></div>
+            <div class="detail-value"><?= e($case['phone'] ?: '—') ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Email</div>
-            <div class="detail-value"><?= htmlspecialchars($case['email'] ?: '—') ?></div>
+            <div class="detail-value"><?= e($case['email'] ?: '—') ?></div>
         </div>
     </div>
 </div>
@@ -128,7 +146,7 @@ function statusBadge(string $status): string {
 <div class="card">
     <div class="card-header">
         <div class="card-title">Suspects (<?= count($suspects) ?>)</div>
-        <a href="../suspects/create.php?case_id=<?= $case['case_id'] ?>" class="btn btn-primary btn-sm">&#43; Add Suspect</a>
+        <a href="../suspects/create.php?case_id=<?= e($case['case_id']) ?>" class="btn btn-primary btn-sm">&#43; Add Suspect</a>
     </div>
     <div class="table-wrap">
         <?php if (empty($suspects)): ?>
@@ -136,7 +154,7 @@ function statusBadge(string $status): string {
             <div class="empty-state-icon"></div>
             <div class="empty-state-title">No Suspects Registered</div>
             <div class="empty-state-text">No suspects have been linked to this case file.</div>
-            <a href="../suspects/create.php?case_id=<?= $case['case_id'] ?>" class="btn btn-primary">Add Suspect</a>
+            <a href="../suspects/create.php?case_id=<?= e($case['case_id']) ?>" class="btn btn-primary">Add Suspect</a>
         </div>
         <?php else: ?>
         <table>
@@ -153,15 +171,15 @@ function statusBadge(string $status): string {
             <tbody>
             <?php foreach ($suspects as $s): ?>
                 <tr>
-                    <td><?= htmlspecialchars($s['full_name']) ?></td>
-                    <td class="td-mono"><?= htmlspecialchars($s['identification_number'] ?: '—') ?></td>
-                    <td class="td-muted"><?= htmlspecialchars($s['gender'] ?: '—') ?></td>
-                    <td class="td-muted"><?= htmlspecialchars($s['date_of_birth'] ?: '—') ?></td>
-                    <td class="td-muted"><?= htmlspecialchars($s['address'] ?: '—') ?></td>
+                    <td><?= e($s['full_name']) ?></td>
+                    <td class="td-mono"><?= e($s['identification_number'] ?: '—') ?></td>
+                    <td class="td-muted"><?= e($s['gender'] ?: '—') ?></td>
+                    <td class="td-muted"><?= e($s['date_of_birth'] ?: '—') ?></td>
+                    <td class="td-muted"><?= e($s['address'] ?: '—') ?></td>
                     <td>
                         <div class="action-group">
-                            <a href="../suspects/show.php?id=<?= $s['suspect_id'] ?>" class="btn btn-ghost btn-sm">View</a>
-                            <a href="../suspects/edit.php?id=<?= $s['suspect_id'] ?>" class="btn btn-secondary btn-sm">Edit</a>
+                            <a href="../suspects/show.php?id=<?= e($s['suspect_id']) ?>" class="btn btn-ghost btn-sm">View</a>
+                            <a href="../suspects/edit.php?id=<?= e($s['suspect_id']) ?>" class="btn btn-secondary btn-sm">Edit</a>
                         </div>
                     </td>
                 </tr>

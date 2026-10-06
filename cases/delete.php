@@ -4,6 +4,8 @@ $current_page = 'cases';
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
+require_once '../includes/csrf.php';
 
 $db = getDB();
 $id = (int)($_GET['id'] ?? 0);
@@ -23,20 +25,40 @@ $suspect_count = (int)$suspect_count->fetchColumn();
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_delete'])) {
+    csrf_verify();
     try {
+        $db->beginTransaction();
+
+        $lockStmt = $db->prepare("SELECT case_id, case_number FROM cases WHERE case_id = :id FOR UPDATE");
+        $lockStmt->execute([':id' => $id]);
+        if (!$lockStmt->fetch()) {
+            throw new Exception('Case record not found.');
+        }
+
+        $checkSuspects = $db->prepare("SELECT COUNT(*) FROM suspects WHERE case_id = :id FOR UPDATE");
+        $checkSuspects->execute([':id' => $id]);
+        if ((int)$checkSuspects->fetchColumn() > 0) {
+            throw new Exception('This case cannot be deleted because it still has suspects linked to it. Remove all suspects from this case first.');
+        }
+
         $stmt = $db->prepare("DELETE FROM cases WHERE case_id = :id");
         $stmt->execute([':id' => $id]);
 
+        $db->commit();
+
         if (session_status() === PHP_SESSION_NONE) session_start();
-        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Case ' . htmlspecialchars($case['case_number']) . ' has been permanently deleted.'];
+        $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Case ' . e($case['case_number']) . ' has been permanently deleted.'];
         header('Location: index.php');
         exit;
 
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
+        if ($db->inTransaction()) {
+            $db->rollBack();
+        }
         if (str_contains($e->getMessage(), 'foreign key') || str_contains($e->getMessage(), 'violates')) {
             $error = 'This case cannot be deleted because it still has suspects linked to it. Remove all suspects from this case first.';
         } else {
-            $error = 'A database error occurred. Please try again.';
+            $error = $e->getMessage() ?: 'A database error occurred. Please try again.';
             error_log($e->getMessage());
         }
     }
@@ -49,12 +71,12 @@ function statusBadge(string $status): string {
         'Open'                => '<span class="badge-status badge-open">Open</span>',
         'Under Investigation' => '<span class="badge-status badge-investigation">Under Investigation</span>',
         'Closed'              => '<span class="badge-status badge-closed">Closed</span>',
-        default               => '<span class="badge-status badge-default">' . htmlspecialchars($status) . '</span>',
+        default               => '<span class="badge-status badge-default">' . e($status) . '</span>',
     };
 }
 ?>
 
-<a href="show.php?id=<?= $id ?>" class="back-link">&#8592; Back to Case</a>
+<a href="show.php?id=<?= e($id) ?>" class="back-link">&#8592; Back to Case</a>
 
 <div class="page-header">
     <div class="page-title" style="color:var(--danger);">Delete Case</div>
@@ -62,7 +84,7 @@ function statusBadge(string $status): string {
 </div>
 
 <?php if ($error): ?>
-<div class="flash flash-error"><?= htmlspecialchars($error) ?></div>
+<div class="flash flash-error"><?= e($error) ?></div>
 <?php endif; ?>
 
 <div class="card" style="margin-bottom:20px;">
@@ -70,11 +92,11 @@ function statusBadge(string $status): string {
     <div class="detail-grid">
         <div class="detail-item">
             <div class="detail-label">Case Number</div>
-            <div class="detail-value mono"><?= htmlspecialchars($case['case_number']) ?></div>
+            <div class="detail-value mono"><?= e($case['case_number']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Title</div>
-            <div class="detail-value"><?= htmlspecialchars($case['title']) ?></div>
+            <div class="detail-value"><?= e($case['title']) ?></div>
         </div>
         <div class="detail-item">
             <div class="detail-label">Status</div>
@@ -83,7 +105,7 @@ function statusBadge(string $status): string {
         <div class="detail-item">
             <div class="detail-label">Linked Suspects</div>
             <div class="detail-value" style="color:<?= $suspect_count > 0 ? 'var(--danger)' : 'var(--success)' ?>">
-                <?= $suspect_count ?> suspect(s)
+                <?= e($suspect_count) ?> suspect(s)
                 <?= $suspect_count > 0 ? '— must be removed first' : '' ?>
             </div>
         </div>
@@ -92,23 +114,24 @@ function statusBadge(string $status): string {
 
 <?php if ($suspect_count > 0): ?>
 <div class="flash flash-error">
-    <strong>Cannot delete:</strong> This case has <?= $suspect_count ?> suspect(s) linked to it.
-    <a href="show.php?id=<?= $id ?>">View suspects</a> and remove them before deleting this case.
+    <strong>Cannot delete:</strong> This case has <?= e($suspect_count) ?> suspect(s) linked to it.
+    <a href="show.php?id=<?= e($id) ?>">View suspects</a> and remove them before deleting this case.
 </div>
 <?php else: ?>
 <div class="danger-zone">
     <h3>Confirm Permanent Deletion</h3>
     <p>
-        You are about to permanently delete case <strong><?= htmlspecialchars($case['case_number']) ?></strong>
-        — "<em><?= htmlspecialchars($case['title']) ?></em>".
+        You are about to permanently delete case <strong><?= e($case['case_number']) ?></strong>
+        &mdash; &ldquo;<em><?= e($case['title']) ?></em>&rdquo;.
         This record will be removed from the Gotham Crime Records database and cannot be recovered.
     </p>
     <form method="POST" style="display:inline;">
+        <?= csrf_field() ?>
         <button type="submit" name="confirm_delete" value="1" class="btn btn-danger"
                 onclick="return confirm('Final confirmation: permanently delete this case file?')">
             Yes, Delete This Case
         </button>
-        <a href="show.php?id=<?= $id ?>" class="btn btn-ghost" style="margin-left:8px;">Cancel</a>
+        <a href="show.php?id=<?= e($id) ?>" class="btn btn-ghost" style="margin-left:8px;">Cancel</a>
     </form>
 </div>
 <?php endif; ?>

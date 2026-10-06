@@ -5,6 +5,8 @@ $current_page = 'cases';
 
 require_once '../includes/auth.php';
 require_once '../config/database.php';
+require_once '../includes/helpers.php';
+require_once '../includes/csrf.php';
 
 $db = getDB();
 $investigators = $db->query("SELECT investigator_id, badge_number, full_name, rank FROM investigators ORDER BY full_name")->fetchAll();
@@ -13,6 +15,7 @@ $errors = [];
 $old    = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_verify();
     $old = $_POST;
 
     $required = ['case_number','title','crime_type','location','incident_date','status','investigator_id'];
@@ -28,6 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         try {
+            $db->beginTransaction();
+
+            // Validate that the assigned investigator exists
+            $invCheck = $db->prepare("SELECT investigator_id FROM investigators WHERE investigator_id = :id FOR UPDATE");
+            $invCheck->execute([':id' => (int)$_POST['investigator_id']]);
+            if (!$invCheck->fetch()) {
+                throw new Exception('Selected investigator does not exist in the roster.');
+            }
+
             $stmt = $db->prepare("
                 INSERT INTO cases (case_number, title, crime_type, location, incident_date, status, description, investigator_id)
                 VALUES (:case_number, :title, :crime_type, :location, :incident_date, :status, :description, :investigator_id)
@@ -43,16 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':investigator_id' => (int)$_POST['investigator_id'],
             ]);
 
+            $db->commit();
+
             if (session_status() === PHP_SESSION_NONE) session_start();
-            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Case ' . htmlspecialchars(trim($_POST['case_number'])) . ' has been opened successfully.'];
+            $_SESSION['flash'] = ['type' => 'success', 'msg' => 'Case ' . e(trim($_POST['case_number'])) . ' has been opened successfully.'];
             header('Location: index.php');
             exit;
 
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
             if (str_contains($e->getMessage(), 'unique') || str_contains($e->getMessage(), 'duplicate')) {
                 $errors['case_number'] = 'This case number already exists in the system.';
             } else {
-                $errors['_general'] = 'A database error occurred. Please try again.';
+                $errors['_general'] = $e->getMessage() ?: 'A database error occurred. Please try again.';
                 error_log($e->getMessage());
             }
         }
@@ -70,7 +87,7 @@ include '../includes/header.php';
 </div>
 
 <?php if (!empty($errors['_general'])): ?>
-<div class="flash flash-error"><?= htmlspecialchars($errors['_general']) ?></div>
+<div class="flash flash-error"><?= e($errors['_general']) ?></div>
 <?php endif; ?>
 
 <?php if (empty($investigators)): ?>
@@ -85,55 +102,56 @@ include '../includes/header.php';
     </div>
     <div class="card-body">
         <form method="POST">
+            <?= csrf_field() ?>
             <div class="form-grid">
 
                 <div class="form-group">
                     <label for="case_number">Case Number <span class="required">*</span></label>
                     <input type="text" id="case_number" name="case_number"
-                           value="<?= htmlspecialchars($old['case_number'] ?? '') ?>"
+                           value="<?= e($old['case_number'] ?? '') ?>"
                            placeholder="e.g. GTH-2026-009">
                     <div class="form-hint">Unique identifier for this case file.</div>
                     <?php if (!empty($errors['case_number'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['case_number']) ?></div>
+                    <div class="form-error"><?= e($errors['case_number']) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label for="title">Case Title <span class="required">*</span></label>
                     <input type="text" id="title" name="title"
-                           value="<?= htmlspecialchars($old['title'] ?? '') ?>"
+                           value="<?= e($old['title'] ?? '') ?>"
                            placeholder="Brief descriptive title">
                     <?php if (!empty($errors['title'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['title']) ?></div>
+                    <div class="form-error"><?= e($errors['title']) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label for="crime_type">Crime Type <span class="required">*</span></label>
                     <input type="text" id="crime_type" name="crime_type"
-                           value="<?= htmlspecialchars($old['crime_type'] ?? '') ?>"
+                           value="<?= e($old['crime_type'] ?? '') ?>"
                            placeholder="e.g. Homicide, Burglary, Fraud">
                     <?php if (!empty($errors['crime_type'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['crime_type']) ?></div>
+                    <div class="form-error"><?= e($errors['crime_type']) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label for="location">Location <span class="required">*</span></label>
                     <input type="text" id="location" name="location"
-                           value="<?= htmlspecialchars($old['location'] ?? '') ?>"
+                           value="<?= e($old['location'] ?? '') ?>"
                            placeholder="Crime scene location">
                     <?php if (!empty($errors['location'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['location']) ?></div>
+                    <div class="form-error"><?= e($errors['location']) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group">
                     <label for="incident_date">Incident Date <span class="required">*</span></label>
                     <input type="date" id="incident_date" name="incident_date"
-                           value="<?= htmlspecialchars($old['incident_date'] ?? '') ?>">
+                           value="<?= e($old['incident_date'] ?? '') ?>">
                     <?php if (!empty($errors['incident_date'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['incident_date']) ?></div>
+                    <div class="form-error"><?= e($errors['incident_date']) ?></div>
                     <?php endif; ?>
                 </div>
 
@@ -142,13 +160,13 @@ include '../includes/header.php';
                     <select id="status" name="status">
                         <option value="">— Select Status —</option>
                         <?php foreach (['Open','Under Investigation','Closed'] as $s): ?>
-                        <option value="<?= $s ?>" <?= ($old['status'] ?? '') === $s ? 'selected' : '' ?>>
-                            <?= $s ?>
+                        <option value="<?= e($s) ?>" <?= ($old['status'] ?? '') === $s ? 'selected' : '' ?>>
+                            <?= e($s) ?>
                         </option>
                         <?php endforeach; ?>
                     </select>
                     <?php if (!empty($errors['status'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['status']) ?></div>
+                    <div class="form-error"><?= e($errors['status']) ?></div>
                     <?php endif; ?>
                 </div>
 
@@ -157,20 +175,20 @@ include '../includes/header.php';
                     <select id="investigator_id" name="investigator_id">
                         <option value="">— Assign Investigator —</option>
                         <?php foreach ($investigators as $inv): ?>
-                        <option value="<?= $inv['investigator_id'] ?>"
+                        <option value="<?= e($inv['investigator_id']) ?>"
                             <?= ($old['investigator_id'] ?? '') == $inv['investigator_id'] ? 'selected' : '' ?>>
-                            <?= htmlspecialchars($inv['full_name']) ?> (<?= htmlspecialchars($inv['badge_number']) ?>)
+                            <?= e($inv['full_name']) ?> (<?= e($inv['badge_number']) ?>)
                         </option>
                         <?php endforeach; ?>
                     </select>
                     <?php if (!empty($errors['investigator_id'])): ?>
-                    <div class="form-error"><?= htmlspecialchars($errors['investigator_id']) ?></div>
+                    <div class="form-error"><?= e($errors['investigator_id']) ?></div>
                     <?php endif; ?>
                 </div>
 
                 <div class="form-group full">
                     <label for="description">Case Description</label>
-                    <textarea id="description" name="description" placeholder="Detailed description of the incident, evidence, and notes..."><?= htmlspecialchars($old['description'] ?? '') ?></textarea>
+                    <textarea id="description" name="description" placeholder="Detailed description of the incident, evidence, and notes..."><?= e($old['description'] ?? '') ?></textarea>
                 </div>
 
             </div>
